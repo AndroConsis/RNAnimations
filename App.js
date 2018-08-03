@@ -7,40 +7,48 @@
  */
 
 import React, { Component } from 'react';
-import { Platform, StyleSheet, Text, View, ScrollView, Animated } from 'react-native';
-
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android:
-    'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
+import { StyleSheet, View, Animated, TouchableOpacity, PanResponder } from 'react-native';
 
 export default class App extends Component {
   state = {
-    animation: new Animated.Value(0)
+    animation: new Animated.ValueXY(0)
+  }
+
+  componentWillMount() {
+    this._panResponder = PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        this.state.animation.extractOffset();
+      },
+      onPanResponderMove: Animated.event([
+        null, {
+          dx: this.state.animation.x,
+          dy: this.state.animation.y
+        }
+      ]),
+      onPanResponderRelease: (e, { vx, vy }) => {
+        Animated.decay(this.state.animation, {
+          velocity: { x: vx, y: vy },
+          deceleration: 0.995
+        }).start();
+      },
+    })
   }
 
   render() {
-    const styles = {
-      backgroundColor: this.state.animation.interpolate({
-        inputRange: [0, 3000],
-        outputRange: ['rgb(111, 23, 43)', 'rgb(255, 255, 255)']
-      })
+    const animatedStyle = {
+      transform:
+        this.state.animation.getTranslateTransform(),
     }
+
     return (
-      <ScrollView
-      scrollEventThrottle={16}
-        onScroll={Animated.event([{
-          nativeEvent: {
-            contentOffset: {
-              y: this.state.animation
-            }
-          }
-        }])}
-      >
-        <Animated.View style={[{height: 3000 }, styles]} />
-      </ScrollView>
+      <View style={styles.container}>
+        <Animated.View
+          style={[styles.box, animatedStyle]}
+          {...this._panResponder.panHandlers}
+        />
+      </View>
     );
   }
 }
@@ -52,14 +60,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
   },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
+  box: {
+    width: 50,
+    height: 50,
+    backgroundColor: 'skyblue'
+  }
 });
